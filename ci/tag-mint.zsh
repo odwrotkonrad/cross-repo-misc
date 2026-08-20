@@ -11,9 +11,9 @@ if [[ -n $head_tag ]] {
 next=$(${0:a:h}/semver-bump.zsh)
 git tag $next
 
-#[why] one masked REPO_VAR_TAG_TOKEN per tagging project, terraform-managed: fail loudly when CI carries none rather than pushing unauthenticated
+#[why] one masked REPO_VAR_TAG_TOKEN per tagging project, terraform-managed, remapped to TAG_TOKEN by the tag-mint job: fail loudly when CI carries none rather than pushing unauthenticated
 if [[ -n ${CI:-} ]] {
-  git push https://tag-minter:${REPO_VAR_TAG_TOKEN:?}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git $next
+  git push https://tag-minter:${TAG_TOKEN:?}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git $next
 } else {
   git push origin $next
 }
