@@ -1,4 +1,7 @@
 ##[>] 🤖🤖
+include:
+  - local: ci/templates/TriggerAutomation.gitlab-ci.yml
+
 workflow:
   rules:
     - if: $CI_COMMIT_TAG
@@ -52,17 +55,11 @@ tag-mint:
     - make tag-mint
 
 trigger-automation:
+  extends: .TriggerAutomation
   stage: trigger
   rules:
     - if: $CI_COMMIT_TAG =~ /^v[0-9]/
   variables:
-    RELEASE_TAG: $CI_COMMIT_TAG
-    PRODUCER: misc
-    PRODUCER_ARTIFACT: cross-repo/misc
-  trigger:
-    project: konradodwrot/cross-repo/automation
-    branch: main
-    forward:
-      yaml_variables: true
-      pipeline_variables: false
+    EVENT_TYPE: release.published
+    EVENT_DETAILS: '{"producer":"misc","artifact":"cross-repo/misc","tag":"$CI_COMMIT_TAG"}'
 ##[<] 🤖🤖
