@@ -20,7 +20,7 @@ default:
       - scheduler_failure
       - unknown_failure
   tags:
-    - gke-linux-amd64
+    - gke-linux-amd64-small
 
 variables:
   ARTIFACT_REGISTRY: $GRP_KO_VAR_ARTIFACT_REGISTRY
