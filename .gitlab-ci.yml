@@ -1,6 +1,6 @@
 ##[>] 🤖🤖
 include:
-  - local: ci/templates/TriggerAutomation.gitlab-ci.yml
+  - local: shared/ci/templates/TriggerAutomation.gitlab-ci.yml
 
 workflow:
   rules:
