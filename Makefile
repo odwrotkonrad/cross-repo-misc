@@ -2,7 +2,7 @@
 SHELL := zsh
 
 WRAPPERS := repo-prepare-dev-env
-COMMANDS := render-templates repo-render-env repo-ci-prepare-hooks repo-ci-precommit-all semver-next tag-mint
+COMMANDS := render-templates repo-render-env repo-ci-prepare-hooks repo-ci-precommit-all semver-next tag-mint test
 
 .PHONY: $(WRAPPERS) $(COMMANDS)
 
@@ -30,6 +30,12 @@ semver-next: render-templates
 tag-mint: render-templates
 	@ci/tag-mint.zsh
 ##[<] Release
+
+##[>] Test [genai-include]
+#[what] run the minitest suite over lib/
+test:
+	@ruby test/che_matrix_test.rb
+##[<] Test
 
 ##[>] CI [genai-include]
 #[what] install lefthook git hooks

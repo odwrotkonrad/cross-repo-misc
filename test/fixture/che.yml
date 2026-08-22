@@ -1,0 +1,17 @@
+options:
+  autoDiscover: true
+env:
+  TREE: root
+base/packages:
+  installPackages:
+    - git
+base:
+  makeLinks:
+    - source: root
+virt/linux:
+  include:
+    profiles:
+      - base
+ontoRepo: # matrix-exempt
+  renderTemplates:
+    - source: templates

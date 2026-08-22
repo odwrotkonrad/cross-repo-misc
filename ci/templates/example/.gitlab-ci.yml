@@ -1,0 +1,43 @@
+##[>] 🤖🤖
+include:
+  - local: ci/templates/CheProfileBase.gitlab-ci.yml
+  - local: ci/templates/CheProfileDryRun.gitlab-ci.yml
+    inputs:
+      profiles: [virt/linux]
+  - local: ci/templates/CheProfileApply.gitlab-ci.yml
+    inputs:
+      profiles: [virt/linux]
+  - local: ci/templates/CheProfileDryRun.gitlab-ci.yml
+    inputs:
+      name: dry-run-apply-macos
+      profiles: [desktop/macos, cli/macos]
+      arches: [arm64]
+      image: macos-15-xcode-16
+      tags: [saas-macos-medium-m1]
+      as_user: "false"
+      enabled: $ENABLE_DARWIN_CI
+  - local: ci/templates/CheProfileApply.gitlab-ci.yml
+    inputs:
+      name: apply-macos
+      profiles: [cli/macos]
+      arches: [arm64]
+      image: macos-15-xcode-16
+      tags: [saas-macos-medium-m1]
+      as_user: "false"
+      enabled: $ENABLE_DARWIN_CI
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+stages:
+  - dry-run-apply
+  - smoke-apply
+
+variables:
+  ARTIFACT_REGISTRY: $GRP_KO_VAR_ARTIFACT_REGISTRY
+  CI_IMAGES_REF: $GRP_KO_VAR_CI_IMAGES_REF
+  ENABLE_DARWIN_CI: $GRP_KO_VAR_ENABLE_DARWIN_CI
+  CI_IMAGE: $ARTIFACT_REGISTRY/ci-linux:$CI_IMAGES_REF
+##[<] 🤖🤖

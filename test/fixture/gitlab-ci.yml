@@ -1,0 +1,19 @@
+include:
+  - project: konradodwrot/cross-repo/misc
+    ref: $GRP_KO_VAR_MISC_REF
+    file: ci/templates/CheProfileDryRun.gitlab-ci.yml
+    inputs:
+      profiles: [base, virt/linux]
+  - project: konradodwrot/cross-repo/misc
+    ref: $GRP_KO_VAR_MISC_REF
+    file: ci/templates/CheProfileApply.gitlab-ci.yml
+    inputs:
+      profiles: [virt/linux, cli/macos]
+  - project: konradodwrot/cross-repo/misc
+    ref: $GRP_KO_VAR_MISC_REF
+    file: ci/templates/TriggerAutomation.gitlab-ci.yml
+    inputs:
+      profiles: [not/a/profile]
+
+stages:
+  - dry-run-apply

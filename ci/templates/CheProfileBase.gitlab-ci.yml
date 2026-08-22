@@ -1,0 +1,42 @@
+##[>] 🤖🤖
+.che-profile-matrix-false:
+  interruptible: true
+  variables:
+    CHE_DEBUG: "1"
+    #[why] the runner is discarded with the job, so an archive of what che changed outlives nothing
+    CHE_BACKUP_AUTO_CREATE: $GRP_KO_VAR_CHE_BACKUP_AUTO_CREATE
+    MK_DRY_RUN_RENDER_SECRETS: "true"
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - api_failure
+      - stuck_or_timeout_failure
+      - scheduler_failure
+      - unknown_failure
+  script:
+    - make sync-full
+
+.che-profile-matrix-true:
+  extends: .che-profile-matrix-false
+  variables:
+    CI_USER: ko
+    GOMODCACHE: $CI_PROJECT_DIR/.cache/go-mod
+    GOCACHE: $CI_PROJECT_DIR/.cache/go-build
+    CC: clang
+  cache:
+    - key:
+        files:
+          - ci/zsh/scripts/installs/00-ci-deps.zsh
+      paths:
+        - .cache/go-build
+  before_script:
+    #[why] ci-linux carries no user (ko moved to the sandbox image): create it here for the as-user apply
+    - useradd -m -s /bin/zsh -G root "$CI_USER" && echo "$CI_USER ALL=(ALL) NOPASSWD:ALL" >"/etc/sudoers.d/$CI_USER"
+    - chown -R "$CI_USER" "$CI_PROJECT_DIR"
+    #[why] GOPATH is the image's root-owned /usr/local/go-tools: `go install` as ko cannot create pkg/sumdb there, so pre-create the tree and hand it over
+    - mkdir -p "$GOPATH/bin" "$GOPATH/pkg" && chown -R "$CI_USER" "$GOPATH"
+  script:
+    #[why] sudo drops every variable it does not name: each upstream pin rides the list or che silently resolves latest
+    - sudo -u "$CI_USER" --preserve-env=CI,CI_PIPELINE_SOURCE,CHE_PROFILE,CHE_DEBUG,CHE_VALIDATE_SPEC,CHE_PACKAGES_REF,PROSE_ASSETS_REF,PROSE_SPEC_REF,MISC_REF,CONFIGS_TOOLS_REF,CONFIGS_AI_TOOLS_REF,CHE_BACKUP_AUTO_CREATE,MK_DRY_RUN,MK_DRY_RUN_RENDER_SECRETS,GITLAB_TOKEN,GOMODCACHE,GOCACHE,CC,GOPATH make -C "$CI_PROJECT_DIR" sync-full
+##[<] 🤖🤖
