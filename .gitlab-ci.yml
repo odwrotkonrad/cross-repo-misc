@@ -29,7 +29,6 @@ variables:
   ARTIFACT_REGISTRY: $GRP_KO_VAR_ARTIFACT_REGISTRY
   CI_IMAGES_REF: $GRP_KO_VAR_CI_IMAGES_REF
   PROSE_ASSETS_REF: $GRP_KO_VAR_PROSE_ASSETS_REF
-  PROSE_SPEC_REF: $GRP_KO_VAR_PROSE_SPEC_REF
   CI_IMAGE: $ARTIFACT_REGISTRY/ci-linux:$CI_IMAGES_REF
 
 validate-pre-commit-all:
@@ -42,6 +41,16 @@ validate-pre-commit-all:
   script:
     - make repo-ci-precommit-all
     - git diff --exit-code HEAD
+
+test-ruby:
+  stage: validate
+  image: $CI_IMAGE
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - when: on_success
+  script:
+    - make test
 
 tag-mint:
   stage: release

@@ -7,7 +7,8 @@ upstream:
   - cross-repo/prose/assets/repo-prose
   - cross-repo/prose/assets/doc-templates
   - cross-repo/prose/assets/license
-  - cross-repo/prose/spec/conventions-doc
 downstream:
   - {name: ci-scripts, type: script}
+  - {name: ci-templates, type: ci-template}
+  - {name: che-profile-matrix-check, type: script}
 ##[<] 🤖🤖

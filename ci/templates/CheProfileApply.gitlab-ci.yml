@@ -1,0 +1,48 @@
+##[>] 🤖🤖
+spec:
+  inputs:
+    profiles:
+      type: array
+    arches:
+      type: array
+      default: [amd64, arm64]
+    image:
+      type: string
+      default: $CI_IMAGE
+    tags:
+      type: array
+      default: [gke-linux-$ARCH-big]
+    enabled:
+      type: string
+      default: "true"
+    as_user:
+      type: string
+      default: "true"
+      options: ["true", "false"]
+    stage:
+      type: string
+      default: smoke-apply
+    name:
+      type: string
+      default: apply-linux
+---
+"$[[ inputs.name ]]":
+  extends: .che-profile-matrix-$[[ inputs.as_user ]]
+  stage: $[[ inputs.stage ]]
+  image: $[[ inputs.image ]]
+  tags: $[[ inputs.tags ]]
+  needs: []
+  parallel:
+    matrix:
+      - CHE_PROFILE: $[[ inputs.profiles ]]
+        ARCH: $[[ inputs.arches ]]
+  rules:
+    - if: '"$[[ inputs.enabled ]]" != "true"'
+      when: never
+    - if: $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - if: $CI_MERGE_REQUEST_DRAFT == "true"
+      when: never
+    - when: manual
+      allow_failure: true
+##[<] 🤖🤖

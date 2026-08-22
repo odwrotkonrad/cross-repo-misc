@@ -2,7 +2,7 @@
 SHELL := zsh
 
 WRAPPERS := repo-prepare-dev-env
-COMMANDS := render-templates repo-render-env repo-ci-prepare-hooks repo-ci-precommit-all semver-next tag-mint
+COMMANDS := render-templates repo-render-env repo-ci-prepare-hooks repo-ci-precommit-all semver-next tag-mint test
 
 .PHONY: $(WRAPPERS) $(COMMANDS)
 
@@ -30,6 +30,12 @@ semver-next: render-templates
 tag-mint: render-templates
 	@ci/tag-mint.zsh
 ##[<] Release
+
+##[>] Test [genai-include]
+#[what] run the minitest suites: lib/ profile-coverage rules, ci/templates/ job shapes
+test:
+	@for suite in test/*_test.rb; do ruby "$$suite" || exit 1; done
+##[<] Test
 
 ##[>] CI [genai-include]
 #[what] install lefthook git hooks
