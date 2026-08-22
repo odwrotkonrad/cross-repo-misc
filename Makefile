@@ -32,9 +32,9 @@ tag-mint: render-templates
 ##[<] Release
 
 ##[>] Test [genai-include]
-#[what] run the minitest suite over lib/
+#[what] run the minitest suites: lib/ profile-coverage rules, ci/templates/ job shapes
 test:
-	@ruby test/che_matrix_test.rb
+	@for suite in test/*_test.rb; do ruby "$$suite" || exit 1; done
 ##[<] Test
 
 ##[>] CI [genai-include]
