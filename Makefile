@@ -2,7 +2,7 @@
 SHELL := zsh
 
 WRAPPERS := repo-prepare-dev-env
-COMMANDS := render-templates repo-render-env repo-ci-prepare-hooks repo-ci-precommit-all semver-next tag-mint test
+COMMANDS := render-templates repo-ci-render-templates repo-render-env repo-ci-prepare-hooks repo-ci-precommit-all semver-next tag-mint test
 
 .PHONY: $(WRAPPERS) $(COMMANDS)
 
@@ -12,9 +12,14 @@ repo-prepare-dev-env: repo-render-env render-templates repo-ci-prepare-hooks
 ##[<] Dev Environment
 
 ##[>] Docs [genai-include]
+#[why] misc renders nothing from misc: it runs its own shared/ci/ payload from source, so no bootstrap rule and no gitignored tree
 #[what] render *.ontoRepo.tpl onto the repo (makefile.agents.md, repo-structure.md, CLAUDE.md, AGENTS.md, README.md)
 render-templates:
-	@che render-templates --profiles=ontoRepo
+	@shared/ci/render-templates.zsh --env-type=dev
+
+#[what] render *.ontoRepo.tpl onto the repo in CI, taking every upstream ref from the job environment
+repo-ci-render-templates:
+	@shared/ci/render-templates.zsh --env-type=ci
 
 #[what] render .env.tpl to .env: upstream refs and CI variables via glab, secrets via op
 repo-render-env:
@@ -24,15 +29,15 @@ repo-render-env:
 ##[>] Release [genai-include]
 #[what] print the next semver tag inferred from the last tag..HEAD diff (override: `semver: major|minor|patch` commit token)
 semver-next: render-templates
-	@ci/semver-bump.zsh
+	@shared/ci/semver-bump.zsh
 
-#[what] mint and push the next semver tag (CI: authed via TAG_TOKEN), running this repo's own ci/ scripts from source
+#[what] mint and push the next semver tag (CI: authed via TAG_TOKEN), running this repo's own shared/ci/ scripts from source
 tag-mint: render-templates
-	@ci/tag-mint.zsh
+	@shared/ci/tag-mint.zsh
 ##[<] Release
 
 ##[>] Test [genai-include]
-#[what] run the minitest suites: lib/ profile-coverage rules, ci/templates/ job shapes
+#[what] run the minitest suites: lib/ profile-coverage rules, shared/ci/templates/ job shapes
 test:
 	@for suite in test/*_test.rb; do ruby "$$suite" || exit 1; done
 ##[<] Test

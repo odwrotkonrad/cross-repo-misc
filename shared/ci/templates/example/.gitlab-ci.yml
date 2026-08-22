@@ -1,13 +1,13 @@
 ##[>] 🤖🤖
 include:
-  - local: ci/templates/CheProfileBase.gitlab-ci.yml
-  - local: ci/templates/CheProfileDryRun.gitlab-ci.yml
+  - local: shared/ci/templates/CheProfileBase.gitlab-ci.yml
+  - local: shared/ci/templates/CheProfileDryRun.gitlab-ci.yml
     inputs:
       profiles: [virt/linux]
-  - local: ci/templates/CheProfileApply.gitlab-ci.yml
+  - local: shared/ci/templates/CheProfileApply.gitlab-ci.yml
     inputs:
       profiles: [virt/linux]
-  - local: ci/templates/CheProfileDryRun.gitlab-ci.yml
+  - local: shared/ci/templates/CheProfileDryRun.gitlab-ci.yml
     inputs:
       name: dry-run-apply-macos
       profiles: [desktop/macos, cli/macos]
@@ -16,7 +16,7 @@ include:
       tags: [saas-macos-medium-m1]
       as_user: "false"
       enabled: $ENABLE_DARWIN_CI
-  - local: ci/templates/CheProfileApply.gitlab-ci.yml
+  - local: shared/ci/templates/CheProfileApply.gitlab-ci.yml
     inputs:
       name: apply-macos
       profiles: [cli/macos]

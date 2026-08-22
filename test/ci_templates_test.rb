@@ -2,7 +2,7 @@
 require "minitest/autorun"
 require "yaml"
 
-TEMPLATE_DIR = File.expand_path("../ci/templates", __dir__)
+TEMPLATE_DIR = File.expand_path("../shared/ci/templates", __dir__)
 
 def template(name)
   YAML.load_stream(File.read(File.join(TEMPLATE_DIR, name)))
@@ -95,6 +95,34 @@ class ApplyTemplateTest < Minitest::Test
     outside = job["rules"].find { |rule| rule["if"] == '$CI_PIPELINE_SOURCE != "merge_request_event"' }
 
     assert_equal "never", outside["when"]
+  end
+end
+
+class RenderTemplatesTemplateTest < Minitest::Test
+  NAME = "RenderTemplates.gitlab-ci.yml".freeze
+
+  def job
+    spec_and_body(NAME).last.values.first
+  end
+
+  def test_defaults_every_input
+    inputs = spec_and_body(NAME).first.dig("spec", "inputs")
+
+    assert_equal %w[image stage name tags], inputs.keys
+    inputs.each { |key, spec| assert spec.key?("default"), "#{key} must default" }
+  end
+
+  def test_renders_through_the_ci_env_type
+    assert_includes job["script"].first, "repo-ci-render-templates"
+  end
+
+  def test_fails_the_job_on_render_drift
+    assert_includes job["script"].last, "git diff --exit-code"
+  end
+
+  def test_never_runs_on_a_tag
+    assert_equal "never", job["rules"].first["when"]
+    assert_equal "$CI_COMMIT_TAG", job["rules"].first["if"]
   end
 end
 

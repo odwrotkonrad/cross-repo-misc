@@ -1,0 +1,28 @@
+##[>] 🤖🤖
+spec:
+  inputs:
+    image:
+      type: string
+      default: $CI_IMAGE
+    stage:
+      type: string
+      default: validate
+    name:
+      type: string
+      default: render-templates
+    tags:
+      type: array
+      default: [gke-linux-amd64-small]
+---
+"$[[ inputs.name ]]":
+  stage: $[[ inputs.stage ]]
+  image: $[[ inputs.image ]]
+  tags: $[[ inputs.tags ]]
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - when: on_success
+  script:
+    - make repo-ci-render-templates
+    - git diff --exit-code
+##[<] 🤖🤖
