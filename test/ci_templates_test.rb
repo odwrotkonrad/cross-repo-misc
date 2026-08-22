@@ -143,7 +143,7 @@ class BaseTemplateTest < Minitest::Test
     script = bodies.fetch(".che-profile-matrix-true")["script"].join(" ")
 
     %w[CHE_PROFILE MK_DRY_RUN CHE_PACKAGES_REF PROSE_ASSETS_REF MISC_REF
-       CONFIGS_TOOLS_REF CONFIGS_AI_TOOLS_REF].each do |name|
+       CONFIGS_REF AUTOMATION_REF].each do |name|
       assert_includes script, name
     end
   end
