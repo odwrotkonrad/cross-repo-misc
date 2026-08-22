@@ -15,6 +15,12 @@ if [[ $env_type != dev && $env_type != ci ]] {
   exit 2
 }
 
+#[why] a pipeline exports every upstream ref as a job variable and holds no token for `glab variable get`:
+#   seeding .env there is both unnecessary and a 401. the dev path asked for by a hook still runs as ci.
+if [[ -n ${CI:-} ]] {
+  env_type=ci
+}
+
 che=${CHE_BIN:-che}
 
 if [[ $env_type == ci ]] {
