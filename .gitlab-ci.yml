@@ -1,7 +1,6 @@
 ##[>] 🤖🤖
 include:
   - local: shared/ci/templates/EmitEvents.gitlab-ci.yml
-  - local: shared/ci/templates/PipelineGate.gitlab-ci.yml
 
 workflow:
   rules:
@@ -10,7 +9,6 @@ workflow:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 stages:
-  - .pre
   - validate
   - release
   - trigger
@@ -40,11 +38,22 @@ validate-pre-commit-all:
   stage: validate
   image: $CI_IMAGE
   rules:
-    - if: $DISABLE_PIPELINE == "true"
-      when: never
     - if: $CI_COMMIT_TAG
       when: never
     - when: on_success
+      changes:
+        - .gitlab-ci.yml
+        - .env.tpl
+        - che.yml
+        - Makefile
+        - lefthook.yml
+        - .repo/*.tpl
+        - .repo/dependency-graph.yml
+        - .repo/artifacts-consumed.yml
+        - lib/**/*
+        - shared/**/*
+        - test/**/*
+        - README.md
   script:
     - make repo-ci-precommit-all
     - git diff --exit-code HEAD
@@ -53,11 +62,14 @@ test-ruby:
   stage: validate
   image: $CI_IMAGE
   rules:
-    - if: $DISABLE_PIPELINE == "true"
-      when: never
     - if: $CI_COMMIT_TAG
       when: never
     - when: on_success
+      changes:
+        - lib/**/*
+        - shared/**/*
+        - test/**/*
+        - Makefile
   script:
     - make test
 
@@ -65,9 +77,14 @@ tag-mint:
   stage: release
   image: $CI_IMAGE
   rules:
-    - if: $DISABLE_PIPELINE == "true"
-      when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - lib/**/*
+        - shared/**/*
+        - che.yml
+        - Makefile
+        - .env.tpl
+        - .gitlab-ci.yml
   variables:
     GIT_DEPTH: "0"
     TAG_TOKEN: $REPO_VAR_TAG_TOKEN
@@ -78,6 +95,4 @@ emit-events:
   extends: .emit-events
   stage: trigger
 
-pipeline-gate:
-  extends: .pipeline-gate
 ##[<] 🤖🤖
