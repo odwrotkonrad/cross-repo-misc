@@ -1,0 +1,17 @@
+##[>] 🤖🤖
+#[why] one terminal job per repo, so a commit touching several .repo/ files sends one array and
+#   triggers automation exactly once; the script decides what the pipeline owes, the job just sends it.
+#   A hidden job, so each repo names its own stage while the body stays here.
+.emit-events:
+  image: $CI_IMAGE
+  interruptible: false
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+  variables:
+    GIT_DEPTH: "2"
+    AUTOMATION_PROJECT: konradodwrot/cross-repo/automation
+    AUTOMATION_TRIGGER_TOKEN: $REPO_VAR_AUTOMATION_TRIGGER_TOKEN
+  script:
+    - shared/ci/emit-events.zsh
+##[<] 🤖🤖
