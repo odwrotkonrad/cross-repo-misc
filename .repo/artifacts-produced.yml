@@ -3,5 +3,5 @@ produces:
   - uri: gitlab.com/konradodwrot/cross-repo/misc
     type: gitRepository
     versionEnvVar: MISC_REF
-    version: v0.0.24
+    version: v0.0.30
 ##[<] 🤖
