@@ -17,8 +17,10 @@
     - changes:
         paths: [.repo/artifacts-produced.yml]
         compare_to: refs/heads/main
+  #[why] che renders the payload directly rather than through a make target: not every consumer
+  #   defines one (iac, go-modules and oci-images do not), and the job only needs the one script
   script:
-    - make shared/ci/make/render.mk
+    - '[ -x shared/ci/pipeline-gate.zsh ] || CHE_ENV_UNSET=empty ${CHE_BIN:-che} render-templates --profiles=bootstrapCrossRepoCI'
     - shared/ci/pipeline-gate.zsh pipeline-gate.env
   artifacts:
     reports:

@@ -148,4 +148,31 @@ class BaseTemplateTest < Minitest::Test
     end
   end
 end
+
+#[why] both jobs run a script che renders, in repos that may define no make target for it: iac,
+#   go-modules and oci-images have none, and assuming one failed their pipelines outright
+class SharedPayloadBootstrapTest < Minitest::Test
+  PAYLOAD_TEMPLATES = { "EmitEvents.gitlab-ci.yml" => "shared/ci/emit-events.zsh",
+                        "PipelineGate.gitlab-ci.yml" => "shared/ci/pipeline-gate.zsh" }.freeze
+
+  def body(name)
+    template(name).first.values.first
+  end
+
+  def test_each_job_renders_its_script_rather_than_assuming_a_make_target
+    PAYLOAD_TEMPLATES.each do |name, script|
+      bootstrap = body(name)["script"].first
+
+      refute_includes bootstrap, "make ", "#{name} must not depend on a consumer's make target"
+      assert_includes bootstrap, script
+      assert_includes bootstrap, "--profiles=bootstrapCrossRepoCI"
+    end
+  end
+
+  def test_each_job_runs_its_script_after_the_bootstrap
+    PAYLOAD_TEMPLATES.each do |name, script|
+      assert_includes body(name)["script"].last, script
+    end
+  end
+end
 ##[<] 🤖🤖
