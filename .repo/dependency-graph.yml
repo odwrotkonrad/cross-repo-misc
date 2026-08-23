@@ -1,0 +1,14 @@
+##[>] 🤖
+dependsOn:
+  gitlab.com/konradodwrot/cross-repo/misc: []
+  ciEnvironment:
+    - uri: gitlab.com/konradodwrot/cross-repo/prose/assets
+      type: gitRepository
+    - uri: gitlab.com/konradodwrot/cross-repo/prose/spec
+      type: gitRepository
+    - uri: us-central1-docker.pkg.dev/staging-499418/ci/ci-linux
+      type: ociImage
+  devEnvironment:
+    - uri: gitlab.com/konradodwrot/ai-harness/configs
+      type: gitRepository
+##[<] 🤖
