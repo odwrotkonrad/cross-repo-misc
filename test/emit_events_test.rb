@@ -67,5 +67,18 @@ class EmitEventsTest < Minitest::Test
     details = EmitEvents.call(['.repo/artifacts-consumed.yml'], repo: 'notes', root: root).first['details']
     assert_equal [{ 'uri' => ASSETS, 'type' => 'gitRepository', 'version' => 'v0.0.60' }], details['consumes']
   end
+
+  def test_an_event_a_job_computed_itself_ships_with_the_rest
+    root = repo_root
+    File.write(File.join(root, EmitEvents::EXTRA_EVENTS_FILE),
+               JSON.generate([{ 'type' => 'ci-var.changed',
+                                'details' => { 'variables' => [{ 'key' => 'GRP_KO_VAR_MISC_REF' }] } }]))
+    assert_equal %w[artifacts.declared ci-var.changed],
+                 EmitEvents.call(['.repo/dependency-graph.yml'], repo: 'iac', root: root).map { |e| e['type'] }
+  end
+
+  def test_no_extra_events_file_owes_nothing_extra
+    assert_empty EmitEvents.extra_events(root: repo_root)
+  end
 end
 ##[<] 🤖🤖

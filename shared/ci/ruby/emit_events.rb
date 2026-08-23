@@ -11,13 +11,27 @@ USAGE = 'usage: emit_events.rb <changed-file>...'.freeze
 module EmitEvents
   DECLARATION_GLOBS = [/\.repo\/.*\.tpl\z/, %r{\.repo/dependency-graph\.yml\z}].freeze
 
+  #[why] a repo whose pipeline computes an event no declaration file can express (iac reads its
+  #   terraform plan for ci-var.changed) writes it here, so one terminal job still sends every event
+  EXTRA_EVENTS_FILE = 'extra-events.json'.freeze
+
   # Decides which events a pipeline owes from its changed paths and the tag it was built on.
   def self.call(changed, repo:, tag: nil, root: '.')
     events = []
     events << { 'type' => 'artifacts.declared', 'details' => { 'repo' => repo } } if changed.any? { |f| DECLARATION_GLOBS.any? { |g| f.match?(g) } }
     events.concat(version_events(changed, repo: repo, root: root))
     events.concat(release_events(repo: repo, tag: tag, root: root))
+    events.concat(extra_events(root: root))
     events
+  end
+
+  # Events this pipeline computed for itself, read from the file its earlier jobs wrote.
+  def self.extra_events(root:)
+    path = File.join(root, EXTRA_EVENTS_FILE)
+    return [] unless File.file?(path)
+
+    doc = JSON.parse(File.read(path, encoding: 'UTF-8'))
+    doc.is_a?(Array) ? doc : [doc]
   end
 
   # One event per rendered version file the commit moved, carrying that file's declared versions.
