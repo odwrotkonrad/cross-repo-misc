@@ -12,7 +12,9 @@
     GIT_DEPTH: "2"
     AUTOMATION_PROJECT: konradodwrot/cross-repo/automation
     AUTOMATION_TRIGGER_TOKEN: $REPO_VAR_AUTOMATION_TRIGGER_TOKEN
+  #[why] che renders the payload directly rather than through a make target: not every consumer
+  #   defines one (iac, go-modules and oci-images do not), and the job only needs this script
   script:
-    - make shared/ci/make/render.mk
+    - '[ -x shared/ci/emit-events.zsh ] || CHE_ENV_UNSET=empty ${CHE_BIN:-che} render-templates --profiles=bootstrapCrossRepoCI'
     - shared/ci/emit-events.zsh
 ##[<] 🤖🤖
