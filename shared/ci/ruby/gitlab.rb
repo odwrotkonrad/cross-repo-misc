@@ -59,11 +59,20 @@ module CrossRepo
       raise "#{project} #{path}: unexpected status #{res.code} #{res.body}"
     end
 
+    #[why] a project pending deletion stays in the listing under a renamed path until the retention
+    #   window expires, and every read of its declarations 404s or times out: skip it, so a deleted
+    #   repo cannot slow the aggregate or count as a repo that declared nothing
     def self.projects(group)
       res = get("#{API}/groups/#{group}/projects?include_subgroups=true&per_page=100", job_token: false)
       raise "group listing failed: #{res.code} #{res.body}" unless res.is_a?(Net::HTTPSuccess)
 
-      JSON.parse(res.body).map { |p| p['path_with_namespace'].delete_prefix("#{group}/") }
+      live_paths(JSON.parse(res.body), group)
+    end
+
+    # The group-relative paths of every project that is not pending deletion.
+    def self.live_paths(projects, group)
+      projects.reject { |p| p['marked_for_deletion_on'] || p['marked_for_deletion_at'] }
+              .map { |p| p['path_with_namespace'].delete_prefix("#{group}/") }
     end
   end
 end
