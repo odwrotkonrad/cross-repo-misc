@@ -13,5 +13,6 @@
     AUTOMATION_PROJECT: konradodwrot/cross-repo/automation
     AUTOMATION_TRIGGER_TOKEN: $REPO_VAR_AUTOMATION_TRIGGER_TOKEN
   script:
+    - make shared/ci/make/render.mk
     - shared/ci/emit-events.zsh
 ##[<] 🤖🤖

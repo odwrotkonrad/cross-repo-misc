@@ -20,7 +20,7 @@ bootstrapCrossRepoCI:
 bootstrapCrossRepoCITagging:
   include:
     profiles:
-      - bootstrapCrossRepoCI
+      - bootstrapCrossRepoGraph
     renderTemplates:
       - source: shared/ci/semver-bump.zsh
         dest: ${invokingSpecGitRoot}/shared/ci/semver-bump.zsh
