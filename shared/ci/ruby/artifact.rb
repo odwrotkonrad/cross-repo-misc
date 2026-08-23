@@ -2,7 +2,10 @@
 module CrossRepo
   #[why] constants inside a Struct.new block bind to the block's scope, never to the struct, so
   #   every caller reading them off Artifact would raise; they live on the module instead
-  ARTIFACT_TYPES = %w[gitRepository ociImage goModule].freeze
+  #[why] file and archive describe what a consumer fetches, not where it is hosted: the schemas are
+  #   single files published to a generic package registry and read by url, never cloned, so calling
+  #   them gitRepository named the wrong thing
+  ARTIFACT_TYPES = %w[gitRepository ociImage goModule archive file].freeze
   ARTIFACT_FIELDS = { 'type' => :type, 'uri' => :uri, 'versionEnvVar' => :version_env_var }.freeze
   GROUP_PREFIX = 'GRP_KO_VAR_'
   PROJECT_PREFIX = 'REPO_VAR_'
