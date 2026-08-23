@@ -1,0 +1,26 @@
+##[>] 🤖🤖
+#[why] one gate job reads the whole changed set and publishes DISABLE_PIPELINE as a dotenv variable,
+#   because rules:changes cannot express "these paths and nothing else": every job then tests one
+#   variable instead of repeating a rule that skips on any match
+#[why] the gate only ever disables on a produced-only commit, so it runs only when that file is in
+#   the changed set: every other pipeline leaves DISABLE_PIPELINE unset, which reads as "run"
+#[why] a failing gate must not skip the pipeline it guards: the script writes the safe default
+#   before anything can fail, so a broken gate falls open rather than silencing every job
+.pipeline-gate:
+  image: $CI_IMAGE
+  stage: .pre
+  variables:
+    GIT_DEPTH: "2"
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - changes:
+        paths: [.repo/artifacts-produced.yml]
+        compare_to: refs/heads/main
+  script:
+    - make shared/ci/make/render.mk
+    - shared/ci/pipeline-gate.zsh pipeline-gate.env
+  artifacts:
+    reports:
+      dotenv: pipeline-gate.env
+##[<] 🤖🤖

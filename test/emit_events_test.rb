@@ -14,7 +14,7 @@ class EmitEventsTest < Minitest::Test
     Dir.mkdir(File.join(dir, '.repo'))
     write = ->(name, doc) { File.write(File.join(dir, '.repo', name), doc.to_yaml) }
     write['dependency-graph.yml', {
-      'dependsOn' => { NOTES => [], 'ciEnvironment' => [{ 'uri' => ASSETS, 'type' => 'gitRepository' }] }
+      'dependsOn' => { NOTES => [], 'ciEnv' => [{ 'uri' => ASSETS, 'type' => 'gitRepository' }] }
     }]
     write['artifacts-produced.yml', { 'produces' => [{ 'uri' => NOTES, 'type' => 'gitRepository',
                                                        'versionEnvVar' => 'NOTES_REF', 'version' => 'v0.0.15' }] }]
