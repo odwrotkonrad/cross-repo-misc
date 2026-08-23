@@ -37,6 +37,15 @@ class ArtifactTest < Minitest::Test
     assert_match(/unknown type "ciVariable"/, unknown.message)
   end
 
+  #[why] a published schema is one file fetched by url, never a clone: typing it gitRepository named
+  #   the transport wrong, so file and archive describe what a consumer actually receives
+  def test_a_fetched_file_or_archive_is_a_type_of_its_own
+    %w[file archive].each do |type|
+      artifact = CrossRepo::Artifact.parse(IMAGE_URI, IMAGE.merge('type' => type))
+      assert_equal type, artifact.type
+    end
+  end
+
   def test_prefixed_version_env_var_is_rejected
     err = assert_raises(ArgumentError) { CrossRepo::Artifact.parse(IMAGE_URI, IMAGE.merge('versionEnvVar' => 'GRP_KO_VAR_X')) }
     refute_nil err

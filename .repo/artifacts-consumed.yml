@@ -10,7 +10,7 @@ consumes:
     type: gitRepository
     version: v0.0.31
   - uri: gitlab.com/konradodwrot/go-modules/che-schema
-    type: gitRepository
+    type: file
     version: v0.0.1-che-min-v0.0.96
   - uri: us-central1-docker.pkg.dev/staging-499418/ci/ci-linux
     type: ociImage

@@ -149,11 +149,10 @@ class BaseTemplateTest < Minitest::Test
   end
 end
 
-#[why] both jobs run a script che renders, in repos that may define no make target for it: iac,
+#[why] the job runs a script che renders, in repos that may define no make target for it: iac,
 #   go-modules and oci-images have none, and assuming one failed their pipelines outright
 class SharedPayloadBootstrapTest < Minitest::Test
-  PAYLOAD_TEMPLATES = { "EmitEvents.gitlab-ci.yml" => "shared/ci/emit-events.zsh",
-                        "PipelineGate.gitlab-ci.yml" => "shared/ci/pipeline-gate.zsh" }.freeze
+  PAYLOAD_TEMPLATES = { "EmitEvents.gitlab-ci.yml" => "shared/ci/emit-events.zsh" }.freeze
 
   def body(name)
     template(name).first.values.first

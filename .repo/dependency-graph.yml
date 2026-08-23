@@ -13,5 +13,5 @@ dependsOn:
     - uri: gitlab.com/konradodwrot/ai-harness/configs
       type: gitRepository
     - uri: gitlab.com/konradodwrot/go-modules/che-schema
-      type: gitRepository
+      type: file
 ##[<] 🤖
