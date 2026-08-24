@@ -20,7 +20,7 @@
   variables:
     GIT_DEPTH: "2"
     AUTOMATION_PROJECT: konradodwrot/cross-repo/automation
-    AUTOMATION_GITLAB_TOKEN: $GRP_KO_PROTECTED_VAR_BOT_AUTOMATION_GITLAB_TOKEN
+    EMIT_EVENTS_TOKEN: $GRP_KO_PROTECTED_VAR_BOT_EMIT_EVENTS_TOKEN
   #[why] che renders the payload directly rather than through a make target: not every consumer
   #   defines one (iac, go-modules and oci-images do not), and the job only needs this script
   script:
