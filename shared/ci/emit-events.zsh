@@ -22,10 +22,24 @@ if [[ $events == '[]' ]]; then
 fi
 
 print -- "posting $(print -- $events | ruby -rjson -e 'puts JSON.parse($stdin.read).map { |e| e["type"] }.join(" ")')"
+
+#[why] an empty credential reaches the API as an anonymous call, which answers 404 rather than 401:
+#   a release whose announcement never landed then reads as a missing project. Fail on the cause
+if [[ -z ${EMIT_EVENTS_TOKEN:-} ]] {
+  print -u2 -- 'EMIT_EVENTS_TOKEN is empty: is GRP_KO_PROTECTED_VAR_BOT_EMIT_EVENTS_TOKEN set, and is this a protected ref?'
+  exit 1
+}
+
+#[why] a project access token on cross-repo/automation, so POST /pipeline with a PRIVATE-TOKEN
+#   header. The /trigger/pipeline form endpoint takes only a pipeline trigger token, a second
+#   identity per emitting repo with nothing to tell the callers apart
+#[why] not the maintainer token automation clones and pushes with: emitting an event is a write to
+#   one project's pipelines, and this credential reaches that project and nothing else
 curl --fail-with-body --silent --show-error \
   --request POST \
-  --form "token=${AUTOMATION_TRIGGER_TOKEN}" \
+  --header "PRIVATE-TOKEN: ${EMIT_EVENTS_TOKEN}" \
   --form "ref=main" \
-  --form "variables[AUTOMATION_EVENT]=${events}" \
-  "${CI_API_V4_URL}/projects/${AUTOMATION_PROJECT//\//%2F}/trigger/pipeline"
+  --form "variables[][key]=AUTOMATION_EVENT" \
+  --form "variables[][value]=${events}" \
+  "${CI_API_V4_URL}/projects/${AUTOMATION_PROJECT//\//%2F}/pipeline"
 ##[<] 🤖🤖
