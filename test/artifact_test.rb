@@ -51,6 +51,45 @@ class ArtifactTest < Minitest::Test
     refute_nil err
   end
 
+  #[why] an identity variable names its protection in the prefix, so every spelling must be rejected
+  #   as a stored value, not just the two unprotected ones
+  def test_every_scope_prefix_is_rejected
+    CrossRepo::SCOPE_PREFIXES.each do |prefix|
+      err = assert_raises(ArgumentError) { CrossRepo::Artifact.parse(IMAGE_URI, IMAGE.merge('versionEnvVar' => "#{prefix}X")) }
+      assert_match(/carries a scope prefix/, err.message)
+    end
+  end
+
+  def test_a_missing_type_is_named
+    err = assert_raises(ArgumentError) { CrossRepo::Artifact.parse(IMAGE_URI, IMAGE.reject { |k, _| k == 'type' }) }
+    assert_match(/missing type/, err.message)
+  end
+
+  #[why] both were declared live before anything validated a type: the list has to admit them or
+  #   loading any repo's declarations raises
+  def test_the_live_lowercase_types_parse
+    %w[ci-variable lockfile genericPackage].each do |type|
+      assert_equal type, CrossRepo::Artifact.parse(IMAGE_URI, IMAGE.merge('type' => type)).type
+    end
+  end
+
+  #[why] a consumer records the version it holds, never the variable carrying it: requiring the
+  #   variable of both rejects every consumes entry in every repo
+  def test_a_consumed_artifact_needs_no_version_env_var
+    artifact = CrossRepo::Artifact.parse(REPO_URI, { 'type' => 'gitRepository' }, produced: false, version: 'v1.2.3')
+    assert_nil artifact.version_env_var
+    assert_equal 'v1.2.3', artifact.version
+  end
+
+  #[why] loading is where a bad type is caught: every tag pipeline builds artifact.released events
+  #   from a Declaration, so an unvalidated type reaches automation as a live event
+  def test_loading_a_declaration_rejects_an_unknown_type
+    err = assert_raises(ArgumentError) do
+      CrossRepo::Declaration.new(repo: 'x', produced: { 'produces' => [IMAGE.merge('uri' => IMAGE_URI, 'type' => 'bogus')] }, graph: {})
+    end
+    assert_match(/unknown type "bogus"/, err.message)
+  end
+
   def test_versions_compare_per_artifact
     old = CrossRepo::Artifact.parse(IMAGE_URI, IMAGE, version: 'v0.0.9')
     new = old.with_version('v0.0.10')
