@@ -41,8 +41,7 @@ module CrossRepo
     def versioned(doc, key)
       (doc[key] || []).to_h do |entry|
         uri = entry.fetch('uri')
-        [uri, Artifact.new(type: entry['type'], uri: uri, version: entry['version'],
-                           version_env_var: entry['versionEnvVar'])]
+        [uri, Artifact.parse(uri, entry, version: entry['version'], produced: key == 'produces')]
       end
     end
   end
