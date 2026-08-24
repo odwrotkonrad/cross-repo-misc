@@ -22,10 +22,22 @@ if [[ $events == '[]' ]]; then
 fi
 
 print -- "posting $(print -- $events | ruby -rjson -e 'puts JSON.parse($stdin.read).map { |e| e["type"] }.join(" ")')"
+
+#[why] an empty credential reaches the API as an anonymous call, which answers 404 rather than 401:
+#   a release whose announcement never landed then reads as a missing project. Fail on the cause
+if [[ -z ${AUTOMATION_GITLAB_TOKEN:-} ]] {
+  print -u2 -- 'AUTOMATION_GITLAB_TOKEN is empty: is GRP_KO_PROTECTED_VAR_BOT_AUTOMATION_GITLAB_TOKEN set, and is this a protected ref?'
+  exit 1
+}
+
+#[why] the group access token authenticates as a user, so it drives POST /pipeline with a
+#   PRIVATE-TOKEN header. The /trigger/pipeline form endpoint accepts only a per-project trigger
+#   token, which would be a second identity per emitting repo with nothing to tell the callers apart
 curl --fail-with-body --silent --show-error \
   --request POST \
-  --form "token=${AUTOMATION_TRIGGER_TOKEN}" \
+  --header "PRIVATE-TOKEN: ${AUTOMATION_GITLAB_TOKEN}" \
   --form "ref=main" \
-  --form "variables[AUTOMATION_EVENT]=${events}" \
-  "${CI_API_V4_URL}/projects/${AUTOMATION_PROJECT//\//%2F}/trigger/pipeline"
+  --form "variables[][key]=AUTOMATION_EVENT" \
+  --form "variables[][value]=${events}" \
+  "${CI_API_V4_URL}/projects/${AUTOMATION_PROJECT//\//%2F}/pipeline"
 ##[<] 🤖🤖
