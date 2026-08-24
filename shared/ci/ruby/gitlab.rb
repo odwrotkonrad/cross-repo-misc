@@ -8,8 +8,12 @@ module CrossRepo
   # Gitlab is the retrying REST client every cross-repo script reads the API through.
   module Gitlab
     API = 'https://gitlab.com/api/v4'
+    #[why] EADDRNOTAVAIL and ENETUNREACH included: a runner pod whose IPv6 route is not up fails the
+    #   connect with those rather than a timeout, and without them one unlucky dial aborted a whole
+    #   aggregate run that a single retry would have completed
     TRANSIENT_ERRORS = [Net::OpenTimeout, Net::ReadTimeout, Errno::ETIMEDOUT, Errno::ECONNRESET, Errno::ECONNREFUSED,
-                        Errno::EHOSTUNREACH, SocketError, EOFError, OpenSSL::SSL::SSLError, IOError].freeze
+                        Errno::EHOSTUNREACH, Errno::EADDRNOTAVAIL, Errno::ENETUNREACH,
+                        SocketError, EOFError, OpenSSL::SSL::SSLError, IOError].freeze
     TRANSIENT_STATUSES = %w[429 500 502 503 504].freeze
     RETRY_ATTEMPTS = 5
     RETRY_BASE_PAUSE = 2
