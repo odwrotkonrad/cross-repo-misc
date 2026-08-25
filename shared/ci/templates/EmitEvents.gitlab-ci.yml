@@ -7,7 +7,7 @@
   interruptible: false
   #[why] a tag pipeline always runs: artifact.released is what announces a completed release, and it
   #   is built from CI_COMMIT_TAG, not from any changed path
-  #[why] on a branch the job only owes something when a declaration changed. artifacts-produced.yml
+  #[why] on a branch the job only owes something when a declaration changed. downstream.yml
   #   is excluded on purpose: the release it records was already announced by artifact.released on
   #   the tag, so re-announcing it here would trigger a pipeline for a commit that changed nothing else
   rules:
@@ -15,8 +15,9 @@
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       changes:
         - .repo/*.tpl
-        - .repo/dependency-graph.yml
-        - .repo/artifacts-consumed.yml
+        - .repo/deps-graph.yml
+        - .repo/upstream.yml
+        - .repo/upstream.env
   variables:
     GIT_DEPTH: "2"
     AUTOMATION_PROJECT: konradodwrot/cross-repo/automation
