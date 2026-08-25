@@ -9,7 +9,7 @@ require 'declaration'
 USAGE = 'usage: emit_events.rb <changed-file>...'.freeze
 
 module EmitEvents
-  DECLARATION_GLOBS = [/\.repo\/.*\.tpl\z/, %r{\.repo/dependency-graph\.yml\z}].freeze
+  DECLARATION_GLOBS = [/\.repo\/.*\.tpl\z/, %r{\.repo/deps-graph\.yml\z}, %r{\.repo/upstream\.yml\z}].freeze
 
   #[why] a repo whose pipeline computes an event no declaration file can express (iac reads its
   #   terraform plan for ci-var.changed) writes it here, so one terminal job still sends every event
@@ -34,14 +34,19 @@ module EmitEvents
     doc.is_a?(Array) ? doc : [doc]
   end
 
-  # One event per rendered version file the commit moved, carrying that file's declared versions.
+  #[why] the upstream half versions in the tracked lockfile, not the yml, so a regen bumping
+  #   .repo/upstream.env is what reports the versions this repo now holds
+  VERSION_FILES = { CrossRepo::Declaration::UPSTREAM_ENV_FILE => %w[artifacts.consumed upstream],
+                    CrossRepo::Declaration::DOWNSTREAM_FILE => %w[artifacts.produced downstream] }.freeze
+
+  # One event per version file the commit moved, carrying that side's declared artifacts and versions.
   def self.version_events(changed, repo:, root:)
-    { CrossRepo::Declaration::CONSUMED_FILE => %w[artifacts.consumed consumes],
-      CrossRepo::Declaration::PRODUCED_FILE => %w[artifacts.produced produces] }.filter_map do |file, (type, key)|
+    VERSION_FILES.filter_map do |file, (type, key)|
       next unless changed.include?(file)
 
-      doc = YAML.safe_load(File.read(File.join(root, file), encoding: 'UTF-8')) || {}
-      { 'type' => type, 'details' => { 'repo' => repo, key => doc[key] || [] } }
+      declaration = CrossRepo::Declaration.load(repo, root)
+      entries = declaration.public_send(key).map { |uri, artifact| artifact.to_definition.merge('uri' => uri, 'version' => artifact.version) }
+      { 'type' => type, 'details' => { 'repo' => repo, key => entries } }
     end
   end
 
@@ -50,7 +55,7 @@ module EmitEvents
     return [] if tag.to_s.empty?
 
     declaration = CrossRepo::Declaration.load(repo, root)
-    declaration.produces.map do |uri, artifact|
+    declaration.downstream.map do |uri, artifact|
       { 'type' => 'artifact.released',
         'details' => { 'artifact' => artifact.to_definition.merge('uri' => uri), 'version' => tag, 'prev' => ENV['PREVIOUS_TAG'] } }
     end

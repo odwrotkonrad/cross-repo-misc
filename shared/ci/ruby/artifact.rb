@@ -20,11 +20,11 @@ module CrossRepo
   # Artifact is one versioned addressable thing: the graph vertex, identified by its uri.
   Artifact = Struct.new(:type, :uri, :version, :version_env_var, keyword_init: true) do
     #[why] versionEnvVar is producer-side: the producer names the variable carrying its version, a
-    #   consumer only records the version it holds. Requiring it of both rejects every consumes entry
-    def self.parse(uri, doc, version: nil, produced: true)
+    #   consumer only records the version it holds. Requiring it of both rejects every upstream entry
+    def self.parse(uri, doc, version: nil, downstream: true)
       raise ArgumentError, "artifact #{uri}: missing type" if doc['type'].to_s.empty?
       raise ArgumentError, "artifact #{uri}: unknown type #{doc['type'].inspect}" unless ARTIFACT_TYPES.include?(doc['type'])
-      raise ArgumentError, "artifact #{uri}: missing versionEnvVar" if produced && doc['versionEnvVar'].to_s.empty?
+      raise ArgumentError, "artifact #{uri}: missing versionEnvVar" if downstream && doc['versionEnvVar'].to_s.empty?
 
       artifact = new(type: doc['type'], uri: uri, version: version, version_env_var: doc['versionEnvVar'])
       artifact.validate!

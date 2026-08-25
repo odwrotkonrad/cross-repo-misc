@@ -13,13 +13,14 @@ class EmitEventsTest < Minitest::Test
     dir = Dir.mktmpdir
     Dir.mkdir(File.join(dir, '.repo'))
     write = ->(name, doc) { File.write(File.join(dir, '.repo', name), doc.to_yaml) }
-    write['dependency-graph.yml', {
+    write['deps-graph.yml', {
       'dependsOn' => { NOTES => [], 'ciEnv' => [{ 'uri' => ASSETS, 'type' => 'gitRepository' }] }
     }]
-    write['artifacts-produced.yml', { 'produces' => [{ 'uri' => NOTES, 'type' => 'gitRepository',
-                                                       'versionEnvVar' => 'NOTES_REF', 'version' => 'v0.0.15' }] }]
-    write['artifacts-consumed.yml', { 'consumes' => [{ 'uri' => ASSETS, 'type' => 'gitRepository',
-                                                       'version' => 'v0.0.60' }] }]
+    write['downstream.yml', { 'downstream' => [{ 'uri' => NOTES, 'type' => 'gitRepository',
+                                                 'versionEnvVar' => 'NOTES_REF', 'version' => 'v0.0.15' }] }]
+    write['upstream.yml', { 'upstream' => [{ 'uri' => ASSETS, 'type' => 'gitRepository',
+                                             'versionEnvVar' => 'PROSE_ASSETS_REF' }] }]
+    File.write(File.join(dir, '.repo', 'upstream.env'), "PROSE_ASSETS_REF=v0.0.60\n")
     dir
   end
 
@@ -31,25 +32,29 @@ class EmitEventsTest < Minitest::Test
   end
 
   def test_a_template_edit_redeclares_structure
-    assert_equal ['artifacts.declared'], types(['.repo/artifacts-consumed.yml.tpl'])
-    assert_equal ['artifacts.declared'], types(['.repo/dependency-graph.yml'])
+    assert_equal ['artifacts.declared'], types(['.repo/downstream.yml.tpl'])
+    assert_equal ['artifacts.declared'], types(['.repo/deps-graph.yml'])
+  end
+
+  def test_a_tracked_upstream_declaration_redeclares_structure
+    assert_equal ['artifacts.declared'], types(['.repo/upstream.yml'])
   end
 
   def test_each_version_file_emits_its_own_event
-    assert_equal ['artifacts.consumed'], types(['.repo/artifacts-consumed.yml'])
-    assert_equal ['artifacts.produced'], types(['.repo/artifacts-produced.yml'])
+    assert_equal ['artifacts.consumed'], types(['.repo/upstream.env'])
+    assert_equal ['artifacts.produced'], types(['.repo/downstream.yml'])
   end
 
   def test_one_commit_touching_both_emits_both_in_one_send
     assert_equal %w[artifacts.declared artifacts.consumed],
-                 types(['.repo/artifacts-consumed.yml.tpl', '.repo/artifacts-consumed.yml'])
+                 types(['.repo/upstream.yml', '.repo/upstream.env'])
   end
 
   def test_an_unrelated_commit_owes_nothing
     assert_empty types(['README.md', 'lib/thing.rb'])
   end
 
-  def test_a_tag_releases_every_produced_artifact
+  def test_a_tag_releases_every_downstream_artifact
     events = types([], tag: 'v0.0.16')
     assert_equal ['artifact.released'], events
   end
@@ -62,10 +67,12 @@ class EmitEventsTest < Minitest::Test
     assert_equal 'v0.0.16', details['version']
   end
 
-  def test_a_consumed_event_carries_the_versions_it_recorded
+  def test_a_consumed_event_carries_the_versions_the_lockfile_holds
     root = repo_root
-    details = EmitEvents.call(['.repo/artifacts-consumed.yml'], repo: 'notes', root: root).first['details']
-    assert_equal [{ 'uri' => ASSETS, 'type' => 'gitRepository', 'version' => 'v0.0.60' }], details['consumes']
+    details = EmitEvents.call(['.repo/upstream.env'], repo: 'notes', root: root).first['details']
+    assert_equal [{ 'uri' => ASSETS, 'type' => 'gitRepository', 'versionEnvVar' => 'PROSE_ASSETS_REF',
+                    'version' => 'v0.0.60' }],
+                 details['upstream']
   end
 
   def test_an_event_a_job_computed_itself_ships_with_the_rest
@@ -74,7 +81,7 @@ class EmitEventsTest < Minitest::Test
                JSON.generate([{ 'type' => 'ci-var.changed',
                                 'details' => { 'variables' => [{ 'key' => 'GRP_KO_VAR_MISC_REF' }] } }]))
     assert_equal %w[artifacts.declared ci-var.changed],
-                 EmitEvents.call(['.repo/dependency-graph.yml'], repo: 'iac', root: root).map { |e| e['type'] }
+                 EmitEvents.call(['.repo/deps-graph.yml'], repo: 'iac', root: root).map { |e| e['type'] }
   end
 
   def test_no_extra_events_file_owes_nothing_extra

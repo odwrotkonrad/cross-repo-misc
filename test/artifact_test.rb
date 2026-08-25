@@ -74,9 +74,9 @@ class ArtifactTest < Minitest::Test
   end
 
   #[why] a consumer records the version it holds, never the variable carrying it: requiring the
-  #   variable of both rejects every consumes entry in every repo
-  def test_a_consumed_artifact_needs_no_version_env_var
-    artifact = CrossRepo::Artifact.parse(REPO_URI, { 'type' => 'gitRepository' }, produced: false, version: 'v1.2.3')
+  #   variable of both rejects every upstream entry in every repo
+  def test_an_upstream_artifact_needs_no_version_env_var
+    artifact = CrossRepo::Artifact.parse(REPO_URI, { 'type' => 'gitRepository' }, downstream: false, version: 'v1.2.3')
     assert_nil artifact.version_env_var
     assert_equal 'v1.2.3', artifact.version
   end
@@ -85,7 +85,7 @@ class ArtifactTest < Minitest::Test
   #   from a Declaration, so an unvalidated type reaches automation as a live event
   def test_loading_a_declaration_rejects_an_unknown_type
     err = assert_raises(ArgumentError) do
-      CrossRepo::Declaration.new(repo: 'x', produced: { 'produces' => [IMAGE.merge('uri' => IMAGE_URI, 'type' => 'bogus')] }, graph: {})
+      CrossRepo::Declaration.new(repo: 'x', downstream: { 'downstream' => [IMAGE.merge('uri' => IMAGE_URI, 'type' => 'bogus')] }, graph: {})
     end
     assert_match(/unknown type "bogus"/, err.message)
   end
@@ -102,33 +102,46 @@ class ArtifactTest < Minitest::Test
     Dir.mktmpdir do |dir|
       Dir.mkdir(File.join(dir, '.repo'))
       write = ->(name, body) { File.write(File.join(dir, '.repo', name), body) }
-      write['dependency-graph.yml',
+      write['deps-graph.yml',
             { 'dependsOn' => { IMAGE_URI => [{ 'uri' => REPO_URI, 'type' => 'gitRepository' }] } }.to_yaml]
-      write['artifacts-produced.yml',
-            { 'produces' => [IMAGE.merge('uri' => IMAGE_URI, 'version' => 'v0.0.121')] }.to_yaml]
-      write['artifacts-consumed.yml',
-            { 'consumes' => [{ 'uri' => REPO_URI, 'type' => 'gitRepository', 'version' => 'v0.9.4' }] }.to_yaml]
+      write['downstream.yml',
+            { 'downstream' => [IMAGE.merge('uri' => IMAGE_URI, 'version' => 'v0.0.121')] }.to_yaml]
+      write['upstream.yml',
+            { 'upstream' => [{ 'uri' => REPO_URI, 'type' => 'gitRepository', 'versionEnvVar' => 'CONFIGS_REF' }] }.to_yaml]
+      write['upstream.env', "CONFIGS_REF=v0.9.4\n"]
 
       declaration = CrossRepo::Declaration.load('cross-repo/infra/oci-images', dir)
-      assert_equal 'v0.0.121', declaration.produces.fetch(IMAGE_URI).version
-      assert_equal 'v0.9.4', declaration.consumes.fetch(REPO_URI).version
+      assert_equal 'v0.0.121', declaration.downstream.fetch(IMAGE_URI).version
+      assert_equal 'v0.9.4', declaration.upstream.fetch(REPO_URI).version
       assert_equal [], declaration.undeclared
       assert_equal [], declaration.dangling
     end
   end
 
-  def test_declaration_names_an_undeclared_produced_artifact
+  def test_declaration_names_an_undeclared_downstream_artifact
     declaration = CrossRepo::Declaration.new(
-      repo: 'x', graph: {}, produced: { 'produces' => [IMAGE.merge('uri' => IMAGE_URI, 'version' => 'v1')] }
+      repo: 'x', graph: {}, downstream: { 'downstream' => [IMAGE.merge('uri' => IMAGE_URI, 'version' => 'v1')] }
     )
     assert_equal [IMAGE_URI], declaration.undeclared
   end
 
-  def test_declaration_names_a_consumed_artifact_no_edge_covers
+  def test_declaration_names_an_upstream_artifact_no_edge_covers
     declaration = CrossRepo::Declaration.new(
-      repo: 'x', graph: {}, consumed: { 'consumes' => [{ 'uri' => REPO_URI, 'type' => 'gitRepository' }] }
+      repo: 'x', graph: {}, upstream: { 'upstream' => [{ 'uri' => REPO_URI, 'type' => 'gitRepository' }] }
     )
     assert_equal ["x consumes #{REPO_URI}, which no dependsOn edge names"], declaration.dangling
+  end
+
+  #[why] the lockfile is the only place an upstream version lives, so a key it does not name must
+  #   read as absent rather than silently inherit whatever the yml once carried
+  def test_an_upstream_version_comes_only_from_the_lockfile
+    declaration = CrossRepo::Declaration.new(
+      repo: 'x', graph: {},
+      upstream: { 'upstream' => [{ 'uri' => REPO_URI, 'type' => 'gitRepository', 'versionEnvVar' => 'CONFIGS_REF',
+                                   'version' => 'v9.9.9' }] },
+      upstream_env: {}
+    )
+    assert_nil declaration.upstream.fetch(REPO_URI).version
   end
 end
 ##[<] 🤖🤖

@@ -3,46 +3,68 @@ require 'yaml'
 require_relative 'artifact'
 
 module CrossRepo
-  # Declaration is one repo's .repo/ interface: its artifact definitions, what it produces, consumes and builds from.
+  # Declaration is one repo's .repo/ interface: its artifact definitions, what it publishes, consumes and builds from.
   class Declaration
-    GRAPH_FILE = '.repo/dependency-graph.yml'
-    PRODUCED_FILE = '.repo/artifacts-produced.yml'
-    CONSUMED_FILE = '.repo/artifacts-consumed.yml'
+    GRAPH_FILE = '.repo/deps-graph.yml'
+    DOWNSTREAM_FILE = '.repo/downstream.yml'
+    UPSTREAM_FILE = '.repo/upstream.yml'
+    UPSTREAM_ENV_FILE = '.repo/upstream.env'
 
-    attr_reader :repo, :artifacts, :depends_on, :produces, :consumes
+    attr_reader :repo, :artifacts, :depends_on, :downstream, :upstream
 
-    # Reads a repo's three rendered files from +root+, tolerating absent produced/consumed files.
+    # Reads a repo's declaration files from +root+, tolerating absent downstream/upstream files.
     def self.load(repo, root)
-      read = ->(rel) { YAML.safe_load(File.read(File.join(root, rel), encoding: 'UTF-8')) if File.file?(File.join(root, rel)) }
-      new(repo: repo, graph: read[GRAPH_FILE] || {}, produced: read[PRODUCED_FILE] || {}, consumed: read[CONSUMED_FILE] || {})
+      path = ->(rel) { File.join(root, rel) }
+      read = ->(rel) { YAML.safe_load(File.read(path[rel], encoding: 'UTF-8')) if File.file?(path[rel]) }
+      new(repo: repo, graph: read[GRAPH_FILE] || {}, downstream: read[DOWNSTREAM_FILE] || {},
+          upstream: read[UPSTREAM_FILE] || {}, upstream_env: read_env(path[UPSTREAM_ENV_FILE]))
     end
 
-    def initialize(repo:, graph:, produced: {}, consumed: {})
+    # Parses a tracked KEY=VALUE lockfile, the sole source of the versions this repo holds.
+    def self.read_env(path)
+      return {} unless File.file?(path)
+
+      File.read(path, encoding: 'UTF-8').each_line.with_object({}) do |line, env|
+        line = line.strip
+        next if line.empty? || line.start_with?('#')
+
+        key, value = line.split('=', 2)
+        env[key] = value.to_s
+      end
+    end
+
+    def initialize(repo:, graph:, downstream: {}, upstream: {}, upstream_env: {})
       @repo = repo
       @depends_on = graph['dependsOn'] || {}
-      @produces = versioned(produced, 'produces')
-      @consumes = versioned(consumed, 'consumes')
-      @artifacts = @produces
+      @downstream = versioned(downstream, 'downstream')
+      @upstream = versioned(upstream, 'upstream', env: upstream_env)
+      @artifacts = @downstream
     end
 
-    # Artifacts this repo produces that declare no depends_on key, the migration work queue.
+    # Artifacts this repo publishes that declare no depends_on key, the migration work queue.
     def undeclared
-      produces.keys.reject { |uri| depends_on.key?(uri) }
+      downstream.keys.reject { |uri| depends_on.key?(uri) }
     end
 
-    # Consumed artifacts no dependsOn edge accounts for: an upstream nothing in this repo builds from.
+    # Upstream artifacts no dependsOn edge accounts for: an upstream nothing in this repo builds from.
     def dangling
       covered = depends_on.values.flatten.map { |u| u.is_a?(Hash) ? u.fetch('uri') : u }
-      (consumes.keys - covered).map { |uri| "#{repo} consumes #{uri}, which no dependsOn edge names" }
+      (upstream.keys - covered).map { |uri| "#{repo} consumes #{uri}, which no dependsOn edge names" }
     end
 
     private
 
-    def versioned(doc, key)
+    def versioned(doc, key, env: nil)
       (doc[key] || []).to_h do |entry|
         uri = entry.fetch('uri')
-        [uri, Artifact.parse(uri, entry, version: entry['version'], produced: key == 'produces')]
+        [uri, Artifact.parse(uri, entry, version: version_of(entry, env), downstream: key == 'downstream')]
       end
+    end
+
+    def version_of(entry, env)
+      return entry['version'] if env.nil?
+
+      env[entry['versionEnvVar']]
     end
   end
 end
