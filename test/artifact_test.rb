@@ -107,8 +107,8 @@ class ArtifactTest < Minitest::Test
       write['downstream.yml',
             { 'downstream' => [IMAGE.merge('uri' => IMAGE_URI, 'version' => 'v0.0.121')] }.to_yaml]
       write['upstream.yml',
-            { 'upstream' => [{ 'uri' => REPO_URI, 'type' => 'gitRepository', 'versionEnvVar' => 'CONFIGS_REF' }] }.to_yaml]
-      write['upstream.env', "CONFIGS_REF=v0.9.4\n"]
+            { 'upstream' => [{ 'uri' => REPO_URI, 'type' => 'gitRepository', 'versionEnvVar' => 'TOOLS_CONFIGS_REF' }] }.to_yaml]
+      write['upstream.env', "TOOLS_CONFIGS_REF=v0.9.4\n"]
 
       declaration = CrossRepo::Declaration.load('cross-repo/infra/oci-images', dir)
       assert_equal 'v0.0.121', declaration.downstream.fetch(IMAGE_URI).version
@@ -137,7 +137,7 @@ class ArtifactTest < Minitest::Test
   def test_an_upstream_version_comes_only_from_the_lockfile
     declaration = CrossRepo::Declaration.new(
       repo: 'x', graph: {},
-      upstream: { 'upstream' => [{ 'uri' => REPO_URI, 'type' => 'gitRepository', 'versionEnvVar' => 'CONFIGS_REF',
+      upstream: { 'upstream' => [{ 'uri' => REPO_URI, 'type' => 'gitRepository', 'versionEnvVar' => 'TOOLS_CONFIGS_REF',
                                    'version' => 'v9.9.9' }] },
       upstream_env: {}
     )
