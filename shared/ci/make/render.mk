@@ -12,8 +12,8 @@ render-templates:
 repo-ci-render-templates:
 	@shared/ci/render-templates.zsh --env-type=ci
 
-#[what] render .env.tpl to .env: upstream refs from the tracked .repo/upstream.env, CI variables via
-#   glab, secrets via op
+#[what] render .che/repo-git-untracked/templates/env.tpl to .env: upstream refs from the tracked
+#   .repo/upstream.env, CI variables via glab, secrets via op
 repo-render-env:
 	@CHE_ENV_UNSET=empty $${CHE_BIN:-che} render-templates --profiles=envSeed
 
