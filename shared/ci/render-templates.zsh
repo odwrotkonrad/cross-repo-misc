@@ -29,7 +29,7 @@ if [[ $env_type == ci ]] {
 }
 
 #[why] the dev render takes its pins from the repo's own che.variables.yml, which che reads itself:
-#   local profiles refer to ${{ var.X_REF }} and no shell export can downgrade them. CI is the other
+#   local profiles refer to var.X_REF and no shell export can downgrade them. CI is the other
 #   way round: the job variables are the current values, and the lockfile is what they update
 CHE_ENV_UNSET=empty $che render-templates --profiles=envSeed
 
