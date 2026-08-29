@@ -28,21 +28,13 @@ if [[ $env_type == ci ]] {
   exit 0
 }
 
-#[why] on a host the tracked lockfile is the single record of what this repo holds, so the dev render
-#   takes its refs from there: a shell exporting a stale pin would otherwise render the docs at a
-#   version this repo does not hold and the pre-commit hook would commit the downgrade. CI is the
-#   other way round: the job variables are the current values, and the lockfile is what they update
-typeset -r upstream_env=.repo/upstream.env
-if [[ -f $upstream_env ]] {
-  for line in ${(f)"$(<$upstream_env)"}; do
-    if [[ $line == [A-Z]*=* ]] export $line
-  done
-}
-
+#[why] the dev render takes its pins from the repo's own che.variables.yml, which che reads itself:
+#   local profiles refer to ${{ var.X_REF }} and no shell export can downgrade them. CI is the other
+#   way round: the job variables are the current values, and the lockfile is what they update
 CHE_ENV_UNSET=empty $che render-templates --profiles=envSeed
 
 #[why] naming an undefined profile is a hard che error, and a repo rendering nothing from misc publishes no bootstrapCrossRepoCI: ask the spec before asking che
-if { grep -qE '^bootstrapCrossRepoCI:' che.yml } {
+if { grep -qsE '^bootstrapCrossRepoCI:' che.yml .che/che.yml .che/*/che.yml } {
   $che render-templates --profiles=bootstrapCrossRepoCI
 }
 
