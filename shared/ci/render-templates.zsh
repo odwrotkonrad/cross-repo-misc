@@ -24,7 +24,7 @@ if [[ -n ${CI:-} ]] {
 che=${CHE_BIN:-che}
 
 if [[ $env_type == ci ]] {
-  $che render-templates --profiles=ontoRepo
+  $che run --profiles=ontoRepo
   exit 0
 }
 
@@ -38,5 +38,5 @@ if { grep -qsE '^bootstrapCrossRepoCI:' che.yml .che/che.yml .che/*/che.yml } {
   $che render-templates --profiles=bootstrapCrossRepoCI
 }
 
-$che render-templates --profiles=ontoRepo
+$che run --profiles=ontoRepo
 ##[<] 🤖🤖
